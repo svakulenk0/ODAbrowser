@@ -9,6 +9,7 @@ import requests
 import json
 import re
 from collections import Counter
+import pickle
 
 from elasticsearch import Elasticsearch
 
@@ -17,8 +18,9 @@ from gensim.models import Phrases
 
 API = 'http://portalwatch.ai.wu.ac.at/csvsearch/es/portals/_search?q=%s'
 PORTALS = ['http://data.hawaii.gov', 'http://data.gov.uk/']
-STOPWORDS = ['and', 'by', 's']
+STOPWORDS = ['and', 'by', 's', 'http', 'in']
 INDEX = 'open_data'
+WORD_DICT = 'wordfreq_log.pickle'
 
 
 def get_from_ES():
@@ -26,11 +28,13 @@ def get_from_ES():
     return es.search(index=INDEX, doc_type='dataset', explain=False)['hits']['hits']
 
 
-def tokenize(string):
+def tokenize(string, stopwords=STOPWORDS):
     """Convert string to lowercase and split into words (ignoring
     punctuation), returning list of words.
     """
-    return re.findall(r'\w+', string.lower())
+    # remove text in brackets
+    string = re.sub(r'\(.*\)', '', string)
+    return [token for token in re.findall(r'\w+', string.lower()) if token not in stopwords]
 
 
 def index_datasets(index_name=INDEX):
@@ -39,7 +43,7 @@ def index_datasets(index_name=INDEX):
     for portal in PORTALS:
         query = 'catalog.url:%22' + portal + '%22'
         resp = requests.get(API % (query))
-        print resp
+        print (resp)
         results = json.loads(resp.text)['hits']['hits']
         for dataset in results:
             doc = dataset['_source']
@@ -49,9 +53,13 @@ def index_datasets(index_name=INDEX):
 
 
 def analyze_collection():
+    # load word frequencies dictionary
+    word_freqs = pickle.load(open( WORD_DICT, "rb" ))
+
     docs = []
     # count words
     counter = Counter()
+    portals = Counter()
 
     results = get_from_ES()
 
@@ -60,7 +68,9 @@ def analyze_collection():
         # print doc
 
         # shared meta attributes indicating information source
-        print doc['catalog']['url']
+        url = doc['catalog']['url']
+        url_tokens = tokenize(url, stopwords=STOPWORDS)
+
         # print doc['publisher']['name']
         
         # shared content attributes
@@ -70,54 +80,57 @@ def analyze_collection():
         # unique content attributes
         name = doc['name']
 
-        tokens = tokenize(name)
-
         # make sure to account only single occurance of token per document
         # remove stopwords
-        unique_tokens = [token for token in set(tokens) if token not in STOPWORDS]
+        unique_tokens_url = [token for token in set(url_tokens)]
+        # filter terms already represented in other dimension
+        tokens = [token for token in tokenize(name) if token not in unique_tokens_url]
+        unique_tokens = [token for token in set(tokens)]
         
-        print name
-        print tokens
-        print unique_tokens
+        print (name)
+        print (tokens)
+        print (unique_tokens)
 
         # collect
         docs.append(tokens)
         counter.update(unique_tokens)
+        portals.update(unique_tokens_url)
 
         # print doc['description'].replace('\n', ' ')
 
-        print '\n'
+        print ('\n')
     ndocs = len(docs)
-    print ndocs, 'docs'
+    print (ndocs, 'docs')
     # collection counter 
     # print counter
     # print '\n'
 
     # calculate term frequencies in the collection
     collection_frequencies = Counter()
-    for word, count in counter.iteritems():
-        collection_frequencies[word] = count/float(ndocs)
+
+    # for word, count in counter.iteritems():
+    #     collection_frequencies[word] = count/float(ndocs)
 
     # count ngrams
     ngrams = form_nrgams(docs)
     for doc in ngrams:
         for ngram in doc:
-            # filter stopwords
-            if ngram not in STOPWORDS:
-                # filter out unigrams
-                if len(tokenize(ngram)) > 1:
-                    counter[ngram] += 1
-                    collection_frequencies[ngram] += 1/float(ndocs)
+            # filter out unigrams
+            if len(tokenize(ngram)) > 1:
+                # counter[ngram] += 1
+                collection_frequencies[ngram] += 1  # /float(ndocs)
+
     # show results
-    print counter.most_common(20)
-    # print collection_frequencies.most_common(10)
+    print ('Portals (urls) dimension:', portals.most_common(20))
+    # print 'Topics (dataset names) dimension:', counter.most_common(20)
+    print (collection_frequencies.most_common(10))
 
 
 def form_nrgams(docs):
-    ngrams = Phrases(docs, min_count=1, threshold=2, delimiter=' ')
+    ngrams = Phrases(docs, min_count=1, threshold=2, delimiter=b' ')
     # recursion to form max number of ngrams with the specified threshold
-    if list(ngrams[docs]) != list(docs):
-        return form_nrgams(ngrams[docs])
+    # if list(ngrams[docs]) != list(docs):
+        # return form_nrgams(ngrams[docs])
     return list(ngrams[docs])
 
     # trigrams = Phrases(bigrams[docs], min_count=1, threshold=2, delimiter=' ')
