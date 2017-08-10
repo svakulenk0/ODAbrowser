@@ -11,6 +11,8 @@ import re
 from collections import Counter
 import pickle
 
+import nltk
+
 from elasticsearch import Elasticsearch
 
 from gensim.models import Phrases
@@ -55,6 +57,8 @@ def index_datasets(index_name=INDEX):
 def analyze_collection():
     # load word frequencies dictionary
     word_freqs = pickle.load(open( WORD_DICT, "rb" ))
+    # use lemmatizer to get the base form of the word tokens
+    lem = nltk.stem.WordNetLemmatizer()
 
     docs = []
     # count words
@@ -85,11 +89,18 @@ def analyze_collection():
         unique_tokens_url = [token for token in set(url_tokens)]
         # filter terms already represented in other dimension
         tokens = [token for token in tokenize(name) if token not in unique_tokens_url]
+
+        # lemmatize tokens
+        lemmas = [lem.lemmatize(token) for token in tokens]
+        # lemmas frequencies based on Wikipedia counts
+        df = [word_freqs[token] for token in lemmas]
+
         unique_tokens = [token for token in set(tokens)]
         
         print (name)
-        print (tokens)
-        print (unique_tokens)
+        print (lemmas)
+        print (df)
+        # print (unique_tokens)
 
         # collect
         docs.append(tokens)
