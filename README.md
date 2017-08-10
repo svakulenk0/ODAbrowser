@@ -1,13 +1,13 @@
-# Data dealer
+# Data Dealer
 
-Goal: generate browsable hierarchical document collection summary, suggest search terms
+Goals: 
 
-Facets: portal/publisher, category (topic)
+1. generate browsable (hierarchical ?) document collection summary to be able to explore document collection in various dimensions, e.g. portal/publisher, country, language, category/topic.
 
-* explore by portal/publisher, e.g. country, state: hawaii, portal: http://data.gov.uk/
-* how to infer category/topic/clusters ? e.g. with a topic model
-* discriminative keywords, pick keywords candidates that carry semantics
-* clustering -> space partitioning 
+2. pick discriminative terms to partition the space of documents (not too general, i.e. present in all documents of the collection, and not too specific, i.e. present in a single document in the collection), pick keyword candidates that carry semantic meaning not a random (rare) corpus-specific collocation, annotate each document with good search terms (ngrams) which reflect its semantics.
+
+3. navigate (suggest, guide user) through good (!) search terms (hierarchy?) which plays the role of the proxy anchoring to the underlying document clusters in the collection.
+
 
 ## References
 
@@ -22,3 +22,5 @@ Facets: portal/publisher, category (topic)
 ## Acknowledgement
 
 * https://gist.github.com/benhoyt/dfafeab26d7c02a52ed17b6229f0cb52
+
+* [wikipedia-word-frequency](https://github.com/IlyaSemenov/wikipedia-word-frequency)
