@@ -1,6 +1,6 @@
 # Data Dealer
 
-Goals: 
+## Goals 
 
 1. generate browsable (hierarchical ?) document collection summary to be able to explore document collection in various dimensions, e.g. portal/publisher, country, language, category/topic.
 
@@ -9,11 +9,20 @@ Goals:
 3. navigate (suggest, guide user) through good (!) search terms (hierarchy?) which plays the role of the proxy anchoring to the underlying document clusters in the collection.
 
 
+## Approach
+
+1. Annotate individual documents
+    1.1. entities (ngrams)
+    1.2. the most descriptive (rare/surprising/unique) terms for each of the documents in the set (wikipedia word frequencies as a proxy to global idf/preplexity)
+2. Aggregate annotations for the whole collection
+    2.1. most discriminative (frequent) terms in annotations
+
+
 ## References
 
 * [Towards End-to-End Reinforcement Learning of Dialogue Agents for Information Access](https://arxiv.org/abs/1609.00777)
 
-* Food Network
+* Food Network Facebook Messenger Chatbot
 
 * Automatic taxonomy construction (ATC)
 
